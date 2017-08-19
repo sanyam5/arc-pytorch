@@ -25,7 +25,8 @@ class ARC(nn.Module):
             image_pairs: (B, 2, h, w) A batch of pairs of images
 
         Returns:
-            (B,
+            (B, lstm_out) A batch of final hidden states after each pair of image has been shown for num_glimpses
+            glimpses.
 
         """
 
