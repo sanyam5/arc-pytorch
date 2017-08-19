@@ -8,7 +8,7 @@ from typing import Tuple
 
 class ARC(nn.Module):
 
-    def __init__(self, num_glimpses: int, glimpse_h: int, glimpse_w: int, lstm_out: int) -> None:
+    def __init__(self, num_glimpses: int=7, glimpse_h: int=32, glimpse_w: int=32, lstm_out: int=5) -> None:
         super().__init__()
         self.num_glimpses = num_glimpses
         self.glimpse_h = glimpse_h
@@ -29,19 +29,30 @@ class ARC(nn.Module):
             glimpses.
 
         """
+        # convert to images to float.
+        image_pairs = image_pairs.float()
 
         batch_size = image_pairs.size()[0]
 
         # initial hidden state of the LSTM.
-        Hx = Variable(torch.zeros(batch_size, 1, self.hidden_size))  # (B, 1, lstm_out)
+        Hx = Variable(torch.zeros(1, batch_size, self.lstm_out))  # (1, B, lstm_out)
 
         for turn in range(2*self.num_glimpses):  # we have num_glimpses glimpses for each image in the pair.
-            images_to_observe = image_pairs[:,  turn // 2]  # (B, h, w)
+            # select image to show, alternate between the first and second image in the pair
+            images_to_observe = image_pairs[:,  turn % 2]  # (B, h, w)
+
+            # choose a portion from image to glimpse using attention
             glimpses = self.get_glimpse(images_to_observe, Hx.view(batch_size, -1))  # (B, glimpse_h, glimpse_w)
             flattened_glimpses = glimpses.view(1, batch_size, -1)  # (B, 1, glimpse_h * glimpse_w), one time-step
 
+            # select hidden state to pass
+            if turn == 0:  # if this the first turn of the LSTM, we let it initialize its own hidden state.
+                last_hidden = None
+            else:  # for later turns we supply the hidden state from the previous turn
+                last_hidden = Hx, Cx
+
             # feed the glimpses and the previous hidden state to the LSTM.
-            Hx, _ = self.lstm(flattened_glimpses, Hx)
+            Hx, (_, Cx) = self.lstm(flattened_glimpses, last_hidden)
 
         # return a batch of last hidden states.
         return Hx.view(batch_size, self.lstm_out)
@@ -65,31 +76,31 @@ class ARC(nn.Module):
         to_length = float(to_length)
 
         # scale the centers and the deltas to map to the actual size of given image.
-        centers = (from_length - 1) * (center_caps + 1) / 2.0
+        centers = (from_length - 1) * (center_caps + 1) / 2.0  # (B)
         deltas = (float(from_length)/to_length) * (1.0 - torch.abs(delta_caps))
 
         # calculate gamma for cauchy kernel
         gammas = torch.exp(1.0 - 2 * torch.abs(delta_caps))  # (B)
 
         # coordinate of pixels on the glimpse
-        glimpse_pixels = torch.arange(0, to_length) - (to_length - 1.0) / 2.0  # (to_length)
+        glimpse_pixels = Variable(torch.arange(0, to_length) - (to_length - 1.0) / 2.0)  # (to_length)
         # space out with delta
-        glimpse_pixels = deltas * glimpse_pixels  # (B, to_length)
+        glimpse_pixels = deltas[:, None] * glimpse_pixels[None, :]  # (B, to_length)
         # center around the centers
-        glimpse_pixels = centers + glimpse_pixels  # (B, to_length)
+        glimpse_pixels = centers[:, None] + glimpse_pixels  # (B, to_length)
 
         # coordinates of pixels on the image
-        image_pixels = torch.arange(0, from_length)  # (from_length)
+        image_pixels = Variable(torch.arange(0, from_length))  # (from_length)
 
         fx = image_pixels - glimpse_pixels[:, :, None]  # (B, to_length, from_length)
-        fx = fx / gammas
+        fx = fx / gammas[:, None, None]
         fx = fx ** 2.0
         fx = 1.0 + fx
-        fx = math.pi * gammas * fx
+        fx = math.pi * gammas[:, None, None] * fx
         fx = 1.0 / fx
         fx = fx / (torch.sum(fx, dim=2) + 1e-4)[:, :, None]  # we add a small constant in the denominator division by 0.
 
-        return fx.swapaxes(1, 2)
+        return fx.transpose(1, 2)
 
     def get_glimpse(self, images: Variable, Hx: Variable) -> Variable:
         """
@@ -115,6 +126,9 @@ class ARC(nn.Module):
         F_w = self.get_filterbank(delta_caps=glimpse_params[:, 2], center_caps=glimpse_params[:, 1],
                                   from_length=image_w, to_length=self.glimpse_w)
 
-        glimpses = torch.bmm(torch.bmm(F_h.swapaxes(1, 2), images), F_w)  # F_h.T * images * F_w
+        # F_h.T * images * F_w
+        glimpses = images
+        glimpses = torch.bmm(F_h.transpose(1, 2), glimpses)
+        glimpses = torch.bmm(glimpses, F_w)
 
         return glimpses  # (B, glimpse_h, glimpse_w)
