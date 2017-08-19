@@ -616,7 +616,7 @@ class ImageAugmenter(object):
 
             y_p = self.hflip_prob
             x_p = self.vflip_prob
-            batch_size = images.shape[0] / 2
+            batch_size = images.shape[0] // 2
             for i in range(batch_size):
                 if y_p > 0 and random.random() < y_p:
                     images_flipped[i] = np.fliplr(images_flipped[i])

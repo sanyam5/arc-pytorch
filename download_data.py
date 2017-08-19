@@ -51,7 +51,6 @@ def omniglot_folder_to_NDarray(path_im):
     ALL_IMGS = []
 
     for alphbt in alphbts:
-        chars_np = []
         chars = os.listdir(os.path.join(path_im, alphbt))
         for char in chars:
             img_filenames = os.listdir(os.path.join(path_im, alphbt, char))
@@ -61,21 +60,24 @@ def omniglot_folder_to_NDarray(path_im):
                 I = imread(fn)
                 I = np.invert(I)
                 char_imgs.append(I)
-            chars_np.append(char_imgs)
-        chars_np = np.array(chars_np)
-        ALL_IMGS.append(chars_np)
+            ALL_IMGS.append(char_imgs)
 
     return np.array(ALL_IMGS)
 
 
 def save_to_numpy() -> None:
     image_folders = ["images_background", "images_evaluation"]
+    all_np_array = []
     for image_folder in image_folders:
         np_array_loc = os.path.join(data_dir, image_folder + ".npy")
         print("Converting folder {} to numpy array...".format(image_folder))
         np_array = omniglot_folder_to_NDarray(os.path.join(extracted_images_location, image_folder))
         np.save(np_array_loc, np_array)
+        all_np_array.append(np_array)
         print("Done.")
+
+    all_np_array = np.concatenate(all_np_array, axis=0)
+    np.save(os.path.join("data", "omniglot.npy"), all_np_array)
 
 
 def main():

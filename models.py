@@ -8,12 +8,13 @@ from typing import Tuple
 
 class ARC(nn.Module):
 
-    def __init__(self, num_glimpses: int=7, glimpse_h: int=32, glimpse_w: int=32, lstm_out: int=5) -> None:
+    def __init__(self, num_glimpses: int=8, glimpse_h: int=4, glimpse_w: int=4, lstm_out: int=4) -> None:
         super().__init__()
         self.num_glimpses = num_glimpses
         self.glimpse_h = glimpse_h
         self.glimpse_w = glimpse_w
         self.lstm_out = lstm_out
+        self.num_out = self.lstm_out
 
         self.lstm = nn.LSTM(input_size=(glimpse_h * glimpse_w), hidden_size=self.lstm_out)
         self.glimpser = nn.Linear(in_features=self.lstm_out, out_features=3)  # three glimpse params --> h, w, delta
@@ -132,3 +133,16 @@ class ARC(nn.Module):
         glimpses = torch.bmm(glimpses, F_w)
 
         return glimpses  # (B, glimpse_h, glimpse_w)
+
+
+class Discriminator(nn.Module):
+
+    def __init__(self):
+        super().__init__()
+        self.arc = ARC()
+        self.dense = nn.Linear(self.arc.num_out, 1)
+
+    def forward(self, image_pairs: Variable) -> Variable:
+        arc_out = self.arc(image_pairs)
+        decision = torch.sigmoid(self.dense(arc_out))
+        return decision
