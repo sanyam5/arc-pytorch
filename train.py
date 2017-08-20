@@ -6,11 +6,11 @@ from batcher import Batcher
 
 
 def train():
-    loader = Batcher()
+    loader = Batcher(batch_size=128)
 
-    disc = Discriminator()
+    disc = Discriminator(lstm_out=128)
     bce = torch.nn.BCEWithLogitsLoss()
-    optimizer = torch.optim.Adam(params=disc.parameters(), lr=1e-3)
+    optimizer = torch.optim.Adam(params=disc.parameters(), lr=3e-4)
 
     best_validation_loss = None
     saving_threshold = 1.2

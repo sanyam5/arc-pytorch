@@ -137,9 +137,9 @@ class ARC(nn.Module):
 
 class Discriminator(nn.Module):
 
-    def __init__(self):
+    def __init__(self, lstm_out: int = 128):
         super().__init__()
-        self.arc = ARC()
+        self.arc = ARC(lstm_out=lstm_out)
         self.dense = nn.Linear(self.arc.num_out, 1)
 
     def forward(self, image_pairs: Variable) -> Variable:
