@@ -8,7 +8,7 @@ from typing import Tuple
 
 class ARC(nn.Module):
 
-    def __init__(self, num_glimpses: int=8, glimpse_h: int=4, glimpse_w: int=4, lstm_out: int=4) -> None:
+    def __init__(self, num_glimpses: int=8, glimpse_h: int=8, glimpse_w: int=8, lstm_out: int=128) -> None:
         super().__init__()
         self.num_glimpses = num_glimpses
         self.glimpse_h = glimpse_h
@@ -144,5 +144,7 @@ class Discriminator(nn.Module):
 
     def forward(self, image_pairs: Variable) -> Variable:
         arc_out = self.arc(image_pairs)
-        decision = torch.sigmoid(self.dense(arc_out))
+
+        # not putting sigmoid here, use sigmoid in the loss function.
+        decision = self.dense(arc_out)
         return decision
