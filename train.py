@@ -17,7 +17,7 @@ def get_pct_accuracy(pred: Variable, target) -> int:
 def train():
     loader = Batcher(batch_size=128)
 
-    disc = Discriminator(num_glimpses=4, lstm_out=128)
+    disc = Discriminator(num_glimpses=6, lstm_out=128)
     bce = torch.nn.BCEWithLogitsLoss()
     optimizer = torch.optim.Adam(params=disc.parameters(), lr=3e-4)
 
@@ -25,7 +25,6 @@ def train():
     saving_threshold = 1.02
     last_saved = None
     save_every = timedelta(minutes=10)
-
 
     i = -1
     while True:

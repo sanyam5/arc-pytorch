@@ -144,11 +144,18 @@ class Discriminator(nn.Module):
             glimpse_h=glimpse_h,
             glimpse_w=glimpse_w,
             lstm_out=lstm_out)
-        self.dense = nn.Linear(self.arc.num_out, 1)
+
+        # three dense layers, gradually toning the states down.
+        self.dense1 = nn.Linear(lstm_out, 32)
+        self.dense2 = nn.Linear(32, 8)
+        self.dense3 = nn.Linear(8, 1)
 
     def forward(self, image_pairs: Variable) -> Variable:
         arc_out = self.arc(image_pairs)
 
         # not putting sigmoid here, use sigmoid in the loss function.
-        decision = self.dense(arc_out)
+        d1 = self.dense1(arc_out)
+        d2 = self.dense2(d1)
+        decision = self.dense3(d2)
+
         return decision
