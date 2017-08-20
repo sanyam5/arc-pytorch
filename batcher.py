@@ -127,7 +127,14 @@ class Batcher(Omniglot):
 
     def fetch_batch(self, part):
         X, Y = self._fetch_batch(part)
-        X = Variable(torch.from_numpy(X)).view(self.batch_size, 2, self.image_size, self.image_size)
+
+        X = Variable(torch.from_numpy(X)).view(2*self.batch_size, self.image_size, self.image_size)
+
+        X1 = X[:self.batch_size]  # (B, h, w)
+        X2 = X[self.batch_size:]  # (B, h, w)
+
+        X = torch.stack([X1, X2], dim=1)  # (B, 2, h, w)
+
         Y = Variable(torch.from_numpy(Y))
         return X, Y
 
