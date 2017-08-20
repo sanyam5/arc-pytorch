@@ -134,6 +134,47 @@ class ARC(nn.Module):
 
         return glimpses  # (B, glimpse_h, glimpse_w)
 
+    def get_attention_mask(self, Hx: Variable, mask_h: int=32, mask_w: int=32) -> Variable:
+        """
+        Draw (approximately) the area focused by attention for display purposes.
+
+        Args:
+            Hx: (B, hx) A batch of hidden states
+            mask_h: int Height of the mask to draw
+            mask_w: int Width of the mask to draw
+
+        Returns:
+            (B, mask_h, mask_w): A batch of masks with attended portions weighted more.
+
+        """
+
+        batch_size, _ = Hx.size()
+
+        glimpse_params = torch.tanh(self.glimpser(Hx))  # (B, 3)  a batch of glimpse params (x, y, delta)
+
+        # (B, image_h, glimpse_h)
+        F_h = self.get_filterbank(delta_caps=glimpse_params[:, 2], center_caps=glimpse_params[:, 0],
+                                  from_length=mask_h, to_length=self.glimpse_h)
+
+        # (B, image_w, glimpse_w)
+        F_w = self.get_filterbank(delta_caps=glimpse_params[:, 2], center_caps=glimpse_params[:, 1],
+                                  from_length=mask_w, to_length=self.glimpse_w)
+
+        # (B, glimpse_h, glimpse_w)
+        glimpse_proxy = Variable(torch.ones(batch_size, self.glimpse_h, self.glimpse_w))
+
+        # find the attention mask that lead to the glimpse.
+        mask = glimpse_proxy
+        mask = torch.bmm(F_h, mask)
+        mask = torch.bmm(mask, F_w.transpose(1, 2))
+
+        # scale to between 0 and 1.0
+        mask = mask - mask.min()
+        mask = mask / mask.max()
+        mask = mask.float()
+
+        return mask
+
 
 class Discriminator(nn.Module):
 
