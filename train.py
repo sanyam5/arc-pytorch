@@ -36,8 +36,8 @@ def train():
             training_loss = loss.data[0]
             validation_loss = loss_val.data[0]
 
-            print("Training loss: {} \t Validation loss: {}".format(
-                training_loss, validation_loss
+            print("Iteration: {} \t Training loss: {} \t Validation loss: {}".format(
+                i, training_loss, validation_loss
             ))
 
             if best_validation_loss is None or best_validation_loss > (saving_threshold * validation_loss):
