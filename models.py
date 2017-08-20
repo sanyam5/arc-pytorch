@@ -30,10 +30,30 @@ class ARC(nn.Module):
             glimpses.
 
         """
+
+        all_hidden = self._forward(image_pairs)  # (B, 2*num_glimpses, lstm_out)
+        last_hidden = all_hidden[:, -1, :]  # (B, lstm_out)
+
+        return last_hidden
+
+    def _forward(self, image_pairs: Variable) -> Variable:
+        """
+        Same as as forward except that it returns all hidden states instead of just the last one.
+
+        Args:
+            image_pairs: (B, 2, h, w) A batch of pairs of images
+
+        Returns:
+            (B, lstm_out) A batch of all hidden states.
+
+        """
+
         # convert to images to float.
         image_pairs = image_pairs.float()
 
         batch_size = image_pairs.size()[0]
+
+        all_hidden = []
 
         # initial hidden state of the LSTM.
         Hx = Variable(torch.zeros(1, batch_size, self.lstm_out))  # (1, B, lstm_out)
@@ -55,8 +75,14 @@ class ARC(nn.Module):
             # feed the glimpses and the previous hidden state to the LSTM.
             Hx, (_, Cx) = self.lstm(flattened_glimpses, last_hidden)
 
-        # return a batch of last hidden states.
-        return Hx.view(batch_size, self.lstm_out)
+            # append this hidden state to all states
+            all_hidden.append(Hx.view(batch_size, self.lstm_out))
+
+        all_hidden = torch.stack(all_hidden)  # (2*num_glimpses, B, lstm_out)
+        all_hidden = all_hidden.transpose(0, 1)  # (B, 2*num_glimpses, lstm_out)
+
+        # return a batch of all hidden states.
+        return all_hidden
 
     def get_filterbank(self, delta_caps: Variable, center_caps: Variable, from_length: int, to_length: int) -> Variable:
         """
