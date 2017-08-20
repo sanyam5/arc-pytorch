@@ -8,7 +8,7 @@ from batcher import Batcher
 def train():
     loader = Batcher(batch_size=128)
 
-    disc = Discriminator(lstm_out=128)
+    disc = Discriminator(num_glimpses=4, lstm_out=128)
     bce = torch.nn.BCEWithLogitsLoss()
     optimizer = torch.optim.Adam(params=disc.parameters(), lr=3e-4)
 
