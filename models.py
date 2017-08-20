@@ -218,16 +218,10 @@ class ARC(nn.Module):
         # (B, image_h, image_w)
         masks = self.get_attention_mask(Hx, mask_h=image_h, mask_w=image_w)
 
-        mx = images.max()
-        mn = images.min()
+        masks = masks.float()
+        images = images.float()
 
-        mid = (mx + mn) / 2.0
-
-        # highlight the area under the mask, dull others.
-        images = images - mid
-        images = images * masks
-        images = images + mid
-
+        images = (images + (masks) * (images+1)) / 3
         return images
 
 
