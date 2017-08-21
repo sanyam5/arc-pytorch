@@ -172,7 +172,7 @@ class Batcher(Omniglot):
 
         X = X - self.mean_pixel
         X = X[:, np.newaxis]
-        X = X.astype("float64")
+        X = X.astype("float32")
 
         return X, y
 
