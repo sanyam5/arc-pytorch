@@ -242,3 +242,6 @@ class Discriminator(nn.Module):
         decision = self.dense2(d1)
 
         return decision
+
+    def save_to_file(self, file_path: str) -> None:
+        torch.save(self.state_dict(), file_path)
