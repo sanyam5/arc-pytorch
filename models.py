@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-import torch.functional as F
+import torch.nn.functional as F
 from torch.autograd import Variable
 import math
 from typing import Tuple
@@ -16,7 +16,7 @@ class ARC(nn.Module):
         self.lstm_out = lstm_out
         self.num_out = self.lstm_out
 
-        self.lstm = nn.LSTM(input_size=(glimpse_h * glimpse_w), hidden_size=self.lstm_out)
+        self.lstm = nn.LSTMCell(input_size=(glimpse_h * glimpse_w), hidden_size=self.lstm_out)
         self.glimpser = nn.Linear(in_features=self.lstm_out, out_features=3)  # three glimpse params --> h, w, delta
 
     def forward(self, image_pairs: Variable) -> Variable:
@@ -56,27 +56,22 @@ class ARC(nn.Module):
         all_hidden = []
 
         # initial hidden state of the LSTM.
-        Hx = Variable(torch.zeros(1, batch_size, self.lstm_out))  # (1, B, lstm_out)
+        Hx = Variable(torch.zeros(batch_size, self.lstm_out))  # (B, lstm_out)
+        Cx = Variable(torch.zeros(batch_size, self.lstm_out))  # (B, lstm_out)
 
         for turn in range(2*self.num_glimpses):  # we have num_glimpses glimpses for each image in the pair.
             # select image to show, alternate between the first and second image in the pair
             images_to_observe = image_pairs[:,  turn % 2]  # (B, h, w)
 
             # choose a portion from image to glimpse using attention
-            glimpses = self.get_glimpse(images_to_observe, Hx.view(batch_size, -1))  # (B, glimpse_h, glimpse_w)
-            flattened_glimpses = glimpses.view(1, batch_size, -1)  # (B, 1, glimpse_h * glimpse_w), one time-step
-
-            # select hidden state to pass
-            if turn == 0:  # if this the first turn of the LSTM, we let it initialize its own hidden state.
-                last_hidden = None
-            else:  # for later turns we supply the hidden state from the previous turn
-                last_hidden = Hx, Cx
+            glimpses = self.get_glimpse(images_to_observe, Hx)  # (B, glimpse_h, glimpse_w)
+            flattened_glimpses = glimpses.view(batch_size, -1)  # (B, glimpse_h * glimpse_w), one time-step
 
             # feed the glimpses and the previous hidden state to the LSTM.
-            Hx, (_, Cx) = self.lstm(flattened_glimpses, last_hidden)
+            Hx, Cx = self.lstm(flattened_glimpses, (Hx, Cx))  # (B, lstm_out), (B, lstm_out)
 
             # append this hidden state to all states
-            all_hidden.append(Hx.view(batch_size, self.lstm_out))
+            all_hidden.append(Hx)
 
         all_hidden = torch.stack(all_hidden)  # (2*num_glimpses, B, lstm_out)
         all_hidden = all_hidden.transpose(0, 1)  # (B, 2*num_glimpses, lstm_out)
@@ -236,16 +231,14 @@ class Discriminator(nn.Module):
             lstm_out=lstm_out)
 
         # three dense layers, gradually toning the states down.
-        self.dense1 = nn.Linear(lstm_out, 32)
-        self.dense2 = nn.Linear(32, 8)
-        self.dense3 = nn.Linear(8, 1)
+        self.dense1 = nn.Linear(lstm_out, 64)
+        self.dense2 = nn.Linear(64, 1)
 
     def forward(self, image_pairs: Variable) -> Variable:
         arc_out = self.arc(image_pairs)
 
         # not putting sigmoid here, use sigmoid in the loss function.
-        d1 = self.dense1(arc_out)
-        d2 = self.dense2(d1)
-        decision = self.dense3(d2)
+        d1 = F.elu(self.dense1(arc_out))
+        decision = self.dense2(d1)
 
         return decision
