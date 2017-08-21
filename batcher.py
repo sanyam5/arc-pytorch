@@ -125,26 +125,32 @@ class Batcher(Omniglot):
         self.sizes = sizes
         self.p = p
 
-    def fetch_batch(self, part):
-        X, Y = self._fetch_batch(part)
+    def fetch_batch(self, part, batch_size: int = None):
 
-        X = Variable(torch.from_numpy(X)).view(2*self.batch_size, self.image_size, self.image_size)
+        if batch_size is None:
+            batch_size = self.batch_size
 
-        X1 = X[:self.batch_size]  # (B, h, w)
-        X2 = X[self.batch_size:]  # (B, h, w)
+        X, Y = self._fetch_batch(part, batch_size)
+
+        X = Variable(torch.from_numpy(X)).view(2*batch_size, self.image_size, self.image_size)
+
+        X1 = X[:batch_size]  # (B, h, w)
+        X2 = X[batch_size:]  # (B, h, w)
 
         X = torch.stack([X1, X2], dim=1)  # (B, 2, h, w)
 
         Y = Variable(torch.from_numpy(Y))
         return X, Y
 
-    def _fetch_batch(self, part):
+    def _fetch_batch(self, part, batch_size: int = None):
+        if batch_size is None:
+            batch_size = self.batch_size
+
         data = self.data
         starts = self.starts[part]
         sizes = self.sizes[part]
         p = self.p[part]
         image_size = self.image_size
-        batch_size = self.batch_size
 
         num_alphbts = len(starts)
 
