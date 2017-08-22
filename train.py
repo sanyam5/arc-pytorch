@@ -16,14 +16,15 @@ def get_pct_accuracy(pred: Variable, target) -> int:
 
 def train():
     loader = Batcher(batch_size=128)
-
-    disc = Discriminator(num_glimpses=6, lstm_out=128)
+    exp_name = "16_4_4_256"
+    disc = Discriminator(num_glimpses=16, glimpse_h=4, glimpse_w=4, lstm_out=256)
+    disc.load_state_dict(torch.load("saved_models/{}/{}".format(exp_name, "best")))
     bce = torch.nn.BCEWithLogitsLoss()
     optimizer = torch.optim.Adam(params=disc.parameters(), lr=3e-4)
 
     best_validation_loss = None
     saving_threshold = 1.02
-    last_saved = None
+    last_saved = datetime.utcnow()
     save_every = timedelta(minutes=10)
 
     i = -1
@@ -52,13 +53,13 @@ def train():
                 print("Significantly improved validation loss from {} --> {}. Saving...".format(
                     best_validation_loss, validation_loss
                 ))
+                disc.save_to_file("saved_models/{}/disc-{}".format(exp_name, validation_loss))
                 best_validation_loss = validation_loss
-                torch.save(disc.state_dict(), "saved_models/disc-{}".format(best_validation_loss))
                 last_saved = datetime.utcnow()
 
             if last_saved is None or last_saved + save_every < datetime.utcnow():
                 print("It's been too long since we last saved the model. Saving...")
-                torch.save(disc.state_dict(), "saved_models/disc-{}".format(validation_loss))
+                disc.save_to_file("saved_models/{}/disc-{}".format(exp_name, validation_loss))
                 last_saved = datetime.utcnow()
 
         optimizer.zero_grad()
