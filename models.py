@@ -196,29 +196,6 @@ class ARC(nn.Module):
 
         return mask
 
-    def draw_attention(self, images: Variable, Hx: Variable) -> Variable:
-        """
-
-        Args:
-            images: (B, h, w) A batch of images
-            Hx: (B, hx) A batch of hidden states
-
-        Returns:
-            (B, h, w) A batch of glimpses.
-
-        """
-
-        _, image_h, image_w = images.size()
-
-        # (B, image_h, image_w)
-        masks = self.get_attention_mask(Hx, mask_h=image_h, mask_w=image_w)
-
-        masks = masks.float()
-        images = images.float()
-
-        images = (images + (masks) * (images+1)) / 3
-        return images
-
 
 class Discriminator(nn.Module):
 
