@@ -1,4 +1,4 @@
-from models import Discriminator
+from models import ArcBinaryClassifier
 import torch
 from torch.autograd import Variable
 from datetime import datetime, timedelta
@@ -17,7 +17,7 @@ def get_pct_accuracy(pred: Variable, target) -> int:
 def train():
     loader = Batcher(batch_size=128)
     exp_name = "16_4_4_256"
-    disc = Discriminator(num_glimpses=16, glimpse_h=4, glimpse_w=4, lstm_out=256)
+    disc = ArcBinaryClassifier(num_glimpses=16, glimpse_h=4, glimpse_w=4, lstm_out=256)
     disc.load_state_dict(torch.load("saved_models/{}/{}".format(exp_name, "best")))
     bce = torch.nn.BCEWithLogitsLoss()
     optimizer = torch.optim.Adam(params=disc.parameters(), lr=3e-4)

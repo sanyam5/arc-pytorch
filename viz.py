@@ -1,5 +1,5 @@
 
-from models import ARC, Discriminator
+from models import ARC, ArcBinaryClassifier
 from batcher import Batcher
 import torch
 
@@ -32,7 +32,7 @@ def display(image1, mask1, image2, mask2, name="hola.png"):
     plt.show()
 
 
-disc = Discriminator(num_glimpses=16, glimpse_h=4, glimpse_w=4, lstm_out=256)
+disc = ArcBinaryClassifier(num_glimpses=16, glimpse_h=4, glimpse_w=4, lstm_out=256)
 mod = torch.load("saved_models/{}/{}".format(exp_name, "best"))
 disc.load_state_dict(mod)
 arc = disc.arc

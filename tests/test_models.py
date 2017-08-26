@@ -30,5 +30,5 @@ def test_glimpse() -> None:
     images_one = Variable(torch.ones(10, 8, 8)).float()  # 10 8x8 images of all ones
     Hx_zero = Variable(torch.zeros(10, 4)).float()
 
-    assert arc.get_glimpse(images_zero, Hx_zero).max().data[0] == 0
-    assert arc.get_glimpse(images_one, Hx_zero).min().data[0] > .9
+    assert arc.glimpse_window.get_glimpse(images_zero, Hx_zero).max().data[0] == 0
+    assert arc.glimpse_window.get_glimpse(images_one, Hx_zero).min().data[0] > .9
