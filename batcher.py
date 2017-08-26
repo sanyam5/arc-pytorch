@@ -12,6 +12,8 @@ from scipy.misc import imresize as resize
 
 from image_augmenter import ImageAugmenter
 
+use_cuda = False
+
 
 class Omniglot(object):
     def __init__(self, path=os.path.join('data', 'omniglot.npy'), batch_size=128, image_size=32):
@@ -140,6 +142,10 @@ class Batcher(Omniglot):
         X = torch.stack([X1, X2], dim=1)  # (B, 2, h, w)
 
         Y = Variable(torch.from_numpy(Y))
+
+        if use_cuda:
+            X, Y = X.cuda(), Y.cuda()
+
         return X, Y
 
     def _fetch_batch(self, part, batch_size: int = None):

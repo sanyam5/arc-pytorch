@@ -4,6 +4,8 @@ import torch.nn.functional as F
 from torch.autograd import Variable
 import math
 
+use_cuda = False
+
 
 class GlimpseWindow:
     """
@@ -48,6 +50,9 @@ class GlimpseWindow:
 
         # coordinate of pixels on the glimpse
         glimpse_pixels = Variable(torch.arange(0, glimpse_size) - (glimpse_size - 1.0) / 2.0)  # (glimpse_size)
+        if use_cuda:
+            glimpse_pixels = glimpse_pixels.cuda()
+
         # space out with delta
         glimpse_pixels = deltas[:, None] * glimpse_pixels[None, :]  # (B, glimpse_size)
         # center around the centers
@@ -55,6 +60,8 @@ class GlimpseWindow:
 
         # coordinates of pixels on the image
         image_pixels = Variable(torch.arange(0, image_size))  # (image_size)
+        if use_cuda:
+            image_pixels = image_pixels.cuda()
 
         fx = image_pixels - glimpse_pixels[:, :, None]  # (B, glimpse_size, image_size)
         fx = fx / gammas[:, None, None]
@@ -219,6 +226,9 @@ class ARC(nn.Module):
         # initial hidden state of the LSTM.
         Hx = Variable(torch.zeros(batch_size, self.controller_out))  # (B, controller_out)
         Cx = Variable(torch.zeros(batch_size, self.controller_out))  # (B, controller_out)
+
+        if use_cuda:
+            Hx, Cx = Hx.cuda(), Cx.cuda()
 
         # take `num_glimpses` glimpses for both images, alternatingly.
         for turn in range(2*self.num_glimpses):

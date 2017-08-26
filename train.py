@@ -4,7 +4,9 @@ import torch
 from torch.autograd import Variable
 from datetime import datetime, timedelta
 
+import batcher
 from batcher import Batcher
+import models
 from models import ArcBinaryClassifier
 
 
@@ -32,6 +34,10 @@ def get_pct_accuracy(pred: Variable, target) -> int:
 def train():
     opt = parser.parse_args()
 
+    if opt.cuda:
+        batcher.use_cuda = True
+        models.use_cuda = True
+
     if opt.name is None:
         # if no name is given, we generate a name from the parameters.
         # only those parameters are taken, which if changed break torch.load compatibility.
@@ -50,12 +56,18 @@ def train():
                                         glimpse_w=opt.glimpseSize,
                                         controller_out=opt.numStates)
 
+    if opt.cuda:
+        discriminator.cuda()
+
     # load from a previous checkpoint, if specified.
     if opt.load is not None:
         discriminator.load_state_dict(torch.load(os.path.join(models_path, opt.load)))
 
     # set up the optimizer.
     bce = torch.nn.BCELoss()
+    if opt.cuda:
+        bce = bce.cuda()
+
     optimizer = torch.optim.Adam(params=discriminator.parameters(), lr=opt.lr)
 
     # load the dataset in memory.
