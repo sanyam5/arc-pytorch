@@ -55,7 +55,7 @@ def train():
         discriminator.load_state_dict(torch.load(os.path.join(models_path, opt.load)))
 
     # set up the optimizer.
-    bce = torch.nn.BCEWithLogitsLoss()
+    bce = torch.nn.BCELoss()
     optimizer = torch.optim.Adam(params=discriminator.parameters(), lr=opt.lr)
 
     # load the dataset in memory.

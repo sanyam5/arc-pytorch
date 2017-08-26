@@ -272,9 +272,8 @@ class ArcBinaryClassifier(nn.Module):
     def forward(self, image_pairs: Variable) -> Variable:
         arc_out = self.arc(image_pairs)
 
-        # not putting sigmoid here, use sigmoid in the loss function.
         d1 = F.elu(self.dense1(arc_out))
-        decision = self.dense2(d1)
+        decision = torch.sigmoid(self.dense2(d1))
 
         return decision
 
