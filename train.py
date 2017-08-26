@@ -97,7 +97,7 @@ def train():
             training_loss = loss.data[0]
             validation_loss = loss_val.data[0]
 
-            print("Iteration: {} \t Train({}%): {} \t Validation({}%): {}".format(
+            print("Iteration: {} \t Train: Acc={}%, Loss={} \t\t Validation: Acc={}%, Loss={}".format(
                 i, get_pct_accuracy(pred, Y), training_loss, get_pct_accuracy(pred_val, Y_val), validation_loss
             ))
 
