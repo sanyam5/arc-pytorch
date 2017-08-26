@@ -52,7 +52,7 @@ def train():
 
     # load from a previous checkpoint, if specified.
     if opt.load is not None:
-        discriminator.load_state_dict(torch.load("saved_models/{}/{}".format(opt.name, opt.load)))
+        discriminator.load_state_dict(torch.load(os.path.join(models_path, opt.load)))
 
     # set up the optimizer.
     bce = torch.nn.BCEWithLogitsLoss()
@@ -96,13 +96,13 @@ def train():
                 print("Significantly improved validation loss from {} --> {}. Saving...".format(
                     best_validation_loss, validation_loss
                 ))
-                discriminator.save_to_file("saved_models/{}/discriminator-{}".format(opt.name, validation_loss))
+                discriminator.save_to_file(os.path.join(models_path, str(validation_loss)))
                 best_validation_loss = validation_loss
                 last_saved = datetime.utcnow()
 
             if last_saved + save_every < datetime.utcnow():
                 print("It's been too long since we last saved the model. Saving...")
-                discriminator.save_to_file("saved_models/{}/discriminator-{}".format(opt.name, validation_loss))
+                discriminator.save_to_file(os.path.join(models_path, str(validation_loss)))
                 last_saved = datetime.utcnow()
 
         optimizer.zero_grad()

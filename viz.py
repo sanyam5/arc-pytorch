@@ -30,6 +30,10 @@ if opt.name is None:
     opt.name = "{}_{}_{}_{}".format(opt.numGlimpses, opt.glimpseSize, opt.numStates,
                                     "cuda" if opt.cuda else "cpu")
 
+# make directory for storing images.
+images_path = os.path.join("visualization", opt.name)
+os.makedirs(images_path, exist_ok=True)
+
 
 def display(image1, mask1, image2, mask2, name="hola.png"):
     _, ax = plt.subplots(1, 2)
@@ -46,14 +50,10 @@ def display(image1, mask1, image2, mask2, name="hola.png"):
     ax[1].imshow(image2.data.numpy(), cmap=mpl.cm.bone)
     ax[1].imshow(mask2, interpolation="nearest", cmap=mpl.cm.ocean, alpha=0.7)
 
-    plt.savefig("visualization/{}/{}".format(opt.name, name))
+    plt.savefig(os.path.join(images_path, name))
 
 
 def visualize():
-
-    # make directory for storing images.
-    images_path = os.path.join("visualization", opt.name)
-    os.makedirs(images_path, exist_ok=True)
 
     batcher = Batcher(batch_size=2)
 
@@ -62,7 +62,7 @@ def visualize():
                                         glimpse_h=opt.glimpseSize,
                                         glimpse_w=opt.glimpseSize,
                                         controller_out=opt.numStates)
-    discriminator.load_state_dict(torch.load("saved_models/{}/{}".format(opt.name, opt.load)))
+    discriminator.load_state_dict(torch.load(os.path.join("saved_models", opt.name, opt.load)))
 
     arc = discriminator.arc
 

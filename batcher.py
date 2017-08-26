@@ -2,6 +2,7 @@
 taken and modified from https://github.com/pranv/ARC
 """
 
+import os
 import numpy as np
 from numpy.random import choice
 import torch
@@ -13,9 +14,8 @@ from image_augmenter import ImageAugmenter
 
 
 class Omniglot(object):
-    def __init__(self, path='data/omniglot.npy', batch_size=128, image_size=32):
+    def __init__(self, path=os.path.join('data', 'omniglot.npy'), batch_size=128, image_size=32):
         """
-        path: path to omniglot.npy file produced by "data/setup_omniglot.py" script
         batch_size: the output is (2 * batch size, 1, image_size, image_size)
                     X[i] & X[i + batch_size] are the pair
         image_size: size of the image
@@ -102,7 +102,7 @@ class Omniglot(object):
 
 
 class Batcher(Omniglot):
-    def __init__(self, path='data/omniglot.npy', batch_size=128, image_size=32):
+    def __init__(self, path=os.path.join('data', 'omniglot.npy'), batch_size=128, image_size=32):
         Omniglot.__init__(self, path, batch_size, image_size)
 
         a_start = self.a_start
