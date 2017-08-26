@@ -47,16 +47,16 @@ class GlimpseWindow:
         gammas = torch.exp(1.0 - 2 * torch.abs(delta_caps))  # (B)
 
         # coordinate of pixels on the glimpse
-        glimpse_pixels = Variable(torch.arange(0, glimpse_size) - (glimpse_size - 1.0) / 2.0)  # (to_length)
+        glimpse_pixels = Variable(torch.arange(0, glimpse_size) - (glimpse_size - 1.0) / 2.0)  # (glimpse_size)
         # space out with delta
-        glimpse_pixels = deltas[:, None] * glimpse_pixels[None, :]  # (B, to_length)
+        glimpse_pixels = deltas[:, None] * glimpse_pixels[None, :]  # (B, glimpse_size)
         # center around the centers
-        glimpse_pixels = centers[:, None] + glimpse_pixels  # (B, to_length)
+        glimpse_pixels = centers[:, None] + glimpse_pixels  # (B, glimpse_size)
 
         # coordinates of pixels on the image
-        image_pixels = Variable(torch.arange(0, image_size))  # (from_length)
+        image_pixels = Variable(torch.arange(0, image_size))  # (image_size)
 
-        fx = image_pixels - glimpse_pixels[:, :, None]  # (B, to_length, from_length)
+        fx = image_pixels - glimpse_pixels[:, :, None]  # (B, glimpse_size, image_size)
         fx = fx / gammas[:, None, None]
         fx = fx ** 2.0
         fx = 1.0 + fx
