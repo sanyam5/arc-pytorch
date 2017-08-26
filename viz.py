@@ -32,15 +32,15 @@ def display(image1, mask1, image2, mask2, name="hola.png"):
     plt.show()
 
 
-disc = ArcBinaryClassifier(num_glimpses=16, glimpse_h=4, glimpse_w=4, lstm_out=256)
+discriminator = ArcBinaryClassifier(num_glimpses=16, glimpse_h=4, glimpse_w=4, controller_out=256)
 mod = torch.load("saved_models/{}/{}".format(exp_name, "best"))
-disc.load_state_dict(mod)
-arc = disc.arc
+discriminator.load_state_dict(mod)
+arc = discriminator.arc
 
 
 sz = 50
 X, Y = batcher.fetch_batch("train", batch_size=sz)
-pred = disc(X)
+pred = discriminator(X)
 bce = torch.nn.BCEWithLogitsLoss()
 loss = bce(pred, Y.float())
 

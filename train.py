@@ -17,10 +17,10 @@ def get_pct_accuracy(pred: Variable, target) -> int:
 def train():
     loader = Batcher(batch_size=128)
     exp_name = "16_4_4_256"
-    disc = ArcBinaryClassifier(num_glimpses=16, glimpse_h=4, glimpse_w=4, lstm_out=256)
-    disc.load_state_dict(torch.load("saved_models/{}/{}".format(exp_name, "best")))
+    discriminator = ArcBinaryClassifier(num_glimpses=16, glimpse_h=4, glimpse_w=4, controller_out=256)
+    # discriminator.load_state_dict(torch.load("saved_models/{}/{}".format(exp_name, "best")))
     bce = torch.nn.BCEWithLogitsLoss()
-    optimizer = torch.optim.Adam(params=disc.parameters(), lr=3e-4)
+    optimizer = torch.optim.Adam(params=discriminator.parameters(), lr=3e-4)
 
     best_validation_loss = None
     saving_threshold = 1.02
@@ -32,14 +32,14 @@ def train():
         i += 1
 
         X, Y = loader.fetch_batch("train")
-        pred = disc(X)
+        pred = discriminator(X)
         loss = bce(pred, Y.float())
 
         if i % 10 == 0:
 
             # validate your model
             X_val, Y_val = loader.fetch_batch("val")
-            pred_val = disc(X_val)
+            pred_val = discriminator(X_val)
             loss_val = bce(pred_val, Y_val.float())
 
             training_loss = loss.data[0]
@@ -53,13 +53,13 @@ def train():
                 print("Significantly improved validation loss from {} --> {}. Saving...".format(
                     best_validation_loss, validation_loss
                 ))
-                disc.save_to_file("saved_models/{}/disc-{}".format(exp_name, validation_loss))
+                discriminator.save_to_file("saved_models/{}/discriminator-{}".format(exp_name, validation_loss))
                 best_validation_loss = validation_loss
                 last_saved = datetime.utcnow()
 
             if last_saved is None or last_saved + save_every < datetime.utcnow():
                 print("It's been too long since we last saved the model. Saving...")
-                disc.save_to_file("saved_models/{}/disc-{}".format(exp_name, validation_loss))
+                discriminator.save_to_file("saved_models/{}/discriminator-{}".format(exp_name, validation_loss))
                 last_saved = datetime.utcnow()
 
         optimizer.zero_grad()

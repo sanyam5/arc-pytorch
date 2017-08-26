@@ -20,11 +20,11 @@ def test_arc() -> None:
     h = arc(batch)
 
     assert h.size()[0] == len(batch)
-    assert h.size()[1] == arc.lstm_out
+    assert h.size()[1] == arc.controller_out
 
 
 def test_glimpse() -> None:
-    arc = ARC(glimpse_h=2, glimpse_w=2, lstm_out=4)
+    arc = ARC(glimpse_h=2, glimpse_w=2, controller_out=4)
 
     images_zero = Variable(torch.zeros(10, 8, 8)).float()  # 10 8x8 images of all zeros
     images_one = Variable(torch.ones(10, 8, 8)).float()  # 10 8x8 images of all ones
