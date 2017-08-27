@@ -27,6 +27,6 @@ Let it train until the accuracy rises to at least 80%
 
 #### Visualize
 ```
-python viz.py --cuda
+python viz.py --cuda --load 0.13591022789478302 --same
 ```
-Run with exactly the same parameters as train.py
+Run with exactly the same parameters as train.py and specify the model to load. Specify "--same" if you want to generate a sample with same characters in both images.
