@@ -13,9 +13,9 @@ from models import ArcBinaryClassifier
 parser = argparse.ArgumentParser()
 parser.add_argument('--batchSize', type=int, default=128, help='input batch size')
 parser.add_argument('--imageSize', type=int, default=32, help='the height / width of the input image to ARC')
-parser.add_argument('--glimpseSize', type=int, default=4, help='the height / width of glimpse seen by ARC')
-parser.add_argument('--numStates', type=int, default=256, help='number of hidden states in ARC controller')
-parser.add_argument('--numGlimpses', type=int, default=16, help='the number glimpses of each image in pair seen by ARC')
+parser.add_argument('--glimpseSize', type=int, default=8, help='the height / width of glimpse seen by ARC')
+parser.add_argument('--numStates', type=int, default=128, help='number of hidden states in ARC controller')
+parser.add_argument('--numGlimpses', type=int, default=6, help='the number glimpses of each image in pair seen by ARC')
 parser.add_argument('--lr', type=float, default=0.0002, help='learning rate, default=0.0002')
 parser.add_argument('--cuda', action='store_true', help='enables cuda')
 parser.add_argument('--name', default=None, help='Custom name for this configuration. Needed for saving'
