@@ -12,15 +12,15 @@ from batcher import Batcher
 parser = argparse.ArgumentParser()
 parser.add_argument('--batchSize', type=int, default=128, help='input batch size')
 parser.add_argument('--imageSize', type=int, default=32, help='the height / width of the input image to ARC')
-parser.add_argument('--glimpseSize', type=int, default=4, help='the height / width of glimpse seen by ARC')
-parser.add_argument('--numStates', type=int, default=256, help='number of hidden states in ARC controller')
-parser.add_argument('--numGlimpses', type=int, default=16, help='the number glimpses of each image in pair seen by ARC')
+parser.add_argument('--glimpseSize', type=int, default=8, help='the height / width of glimpse seen by ARC')
+parser.add_argument('--numStates', type=int, default=128, help='number of hidden states in ARC controller')
+parser.add_argument('--numGlimpses', type=int, default=6, help='the number glimpses of each image in pair seen by ARC')
 parser.add_argument('--lr', type=float, default=0.0002, help='learning rate, default=0.0002')
 parser.add_argument('--cuda', action='store_true', help='enables cuda')
 parser.add_argument('--name', default=None, help='Custom name for this configuration. Needed for loading model'
                                                  'and saving images')
 parser.add_argument('--load', required=True, help='the model to load from.')
-
+parser.add_argument('--same', action='store_true', help='whether to generate same character pairs or not')
 
 opt = parser.parse_args()
 
@@ -35,13 +35,20 @@ images_path = os.path.join("visualization", opt.name)
 os.makedirs(images_path, exist_ok=True)
 
 
+# initialise the batcher
+batcher = Batcher(batch_size=opt.batchSize)
+
+
 def display(image1, mask1, image2, mask2, name="hola.png"):
     _, ax = plt.subplots(1, 2)
 
-    mask1 = (mask1 > 0.15).data.numpy()
+    # a heuristic for deciding cutoff
+    masking_cutoff = 2.4 / (opt.glimpseSize)**2
+
+    mask1 = (mask1 > masking_cutoff).data.numpy()
     mask1 = np.ma.masked_where(mask1 == 0, mask1)
 
-    mask2 = (mask2 > 0.15).data.numpy()
+    mask2 = (mask2 > masking_cutoff).data.numpy()
     mask2 = np.ma.masked_where(mask2 == 0, mask2)
 
     ax[0].imshow(image1.data.numpy(), cmap=mpl.cm.bone)
@@ -53,9 +60,26 @@ def display(image1, mask1, image2, mask2, name="hola.png"):
     plt.savefig(os.path.join(images_path, name))
 
 
-def visualize():
+def get_sample(discriminator):
 
-    batcher = Batcher(batch_size=2)
+    # size of the set to choose sample from from
+    sample_size = 30
+    X, Y = batcher.fetch_batch("train", batch_size=sample_size)
+    pred = discriminator(X)
+
+    if opt.same:
+        same_pred = pred[sample_size // 2:].data.numpy()[:, 0]
+        mx = same_pred.argsort()[len(same_pred) // 2]  # choose the sample with median confidence
+        index = mx + sample_size // 2
+    else:
+        diff_pred = pred[:sample_size // 2].data.numpy()[:, 0]
+        mx = diff_pred.argsort()[len(diff_pred) // 2]  # choose the sample with median confidence
+        index = mx
+
+    return X[index]
+
+
+def visualize():
 
     # initialise the model
     discriminator = ArcBinaryClassifier(num_glimpses=opt.numGlimpses,
@@ -66,44 +90,23 @@ def visualize():
 
     arc = discriminator.arc
 
-    sz = 30
-    X, Y = batcher.fetch_batch("train", batch_size=sz)
-    pred = discriminator(X)
-    bce = torch.nn.BCEWithLogitsLoss()
-    loss = bce(pred, Y.float())
+    sample = get_sample(discriminator)
 
-    print("loss is {}".format(loss))
+    all_hidden = arc._forward(sample[None, :, :])[:, 0, :]  # (2*numGlimpses, controller_out)
+    glimpse_params = torch.tanh(arc.glimpser(all_hidden))
+    masks = arc.glimpse_window.get_attention_mask(glimpse_params, mask_h=opt.imageSize, mask_w=opt.imageSize)
 
-    same_pred = pred[sz // 2:].data.numpy()[:, 0]
-    mx = same_pred.argsort()[len(same_pred) // 2]
-    val = same_pred[mx]
-    print(mx, val)
-
-
-    same = mx + sz // 2
-
-    img1, img2 = X[same]
-    all_hidden = arc._forward(X)
-    my_hidden = all_hidden[same]
-    first_h = []
-    second_h = []
-
-    for turn in range(len(my_hidden)):
-        if turn % 2 == 1:  # the first image outputs the hidden state for the next image
-            first_h.append(my_hidden[turn])
+    # separate the masks of each image.
+    masks1 = []
+    masks2 = []
+    for i, mask in enumerate(masks):
+        if i % 2 == 1:  # the first image outputs the hidden state for the next image
+            masks1.append(mask)
         else:
-            second_h.append(my_hidden[turn])
+            masks2.append(mask)
 
-    num_glimpses = len(my_hidden) // 2
-
-    for i in range(num_glimpses):
-        d1 = img1
-        d2 = img2
-        gp1 = torch.tanh(arc.glimpser(first_h[i][None, :]))
-        gp2 = torch.tanh(arc.glimpser(second_h[i][None, :]))
-        o1 = arc.glimpse_window.get_attention_mask(gp1, mask_h=opt.imageSize, mask_w=opt.imageSize)[0]
-        o2 = arc.glimpse_window.get_attention_mask(gp2, mask_h=opt.imageSize, mask_w=opt.imageSize)[0]
-        display(d1, o1, d2, o2, "img_{}".format(i))
+    for i, (mask1, mask2) in enumerate(zip(masks1, masks2)):
+        display(sample[0], mask1, sample[1], mask2, "img_{}".format(i))
 
 
 if __name__ == "__main__":
