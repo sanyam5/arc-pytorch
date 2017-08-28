@@ -1,6 +1,7 @@
 # arc-pytorch
 PyTorch implementation of [Attentive Recurrent Comparators](https://arxiv.org/abs/1703.00767) by Shyam et al.
 
+A [blog](https://medium.com/@sanyamagarwal/understanding-attentive-recurrent-comparators-ea1b741da5c3) explaining Attentive Recurrent Comparators
 
 ### Visualizing Attention
 
