@@ -30,4 +30,4 @@ Let it train until the accuracy rises to at least 80%
 ```
 python viz.py --cuda --load 0.13591022789478302 --same
 ```
-Run with exactly the same parameters as train.py and specify the model to load. Specify "--same" if you want to generate a sample with same characters in both images.
+Run with exactly the same parameters as train.py and specify the model to load. Specify "--same" if you want to generate a sample with same characters in both images. The script dumps images to a directory in visualization. The name of directory is taken from --name parameter if specified, else name is a function of the parameters of network.
