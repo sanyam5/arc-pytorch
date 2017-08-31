@@ -24,7 +24,7 @@ A one-time 52MB download. Shouldn't take more than a few minutes.
 ```
 python train.py --cuda
 ```
-Let it train until the accuracy rises to at least 80%
+Let it train until the accuracy rises to at least 80%. Early stopping is not implemented yet. You will have to manually kill the process.
 
 #### Visualize
 ```
